@@ -1,5 +1,5 @@
 import logging.config
-
+import sys
 from tableau_parameter_util.workbook import Workbook
 
 if __name__ == '__main__':
@@ -27,6 +27,8 @@ if __name__ == '__main__':
             print(f"WB: {workbook_param.name} - {workbook_param.caption} != "
                   f" DS: [{ds_name}] {datasource_params.name} -"
                   f" {datasource_params.caption}")
+        sys.exit(-1)
 
     else:
         print("--None--")
+        sys.exit(0)

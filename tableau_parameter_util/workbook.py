@@ -22,15 +22,13 @@ class Workbook(TableauDataItem):
         ds = root.findall(
             '''./datasources/datasource/connection/metadata-records/metadata-record[@class='capability']/attributes/attribute[@name='datasource']''')
 
-        # if len(ds) > 1:
-        #     print("\nMultiple DS found\n")
         out_params_map = {}
 
         for embedded_ds in ds:
 
-            # Cleanup garbage XML or this won't parse. I have no idea where this encoding
-            # comes from, but it's garbage.
-            # Remove double quotes surrounding the CDATA
+            # Cleanup garbage XML or this won't parse. I have no idea where this
+            # encoding comes from, but it's garbage. Remove double quotes surrounding
+            # the CDATA
             embedded = embedded_ds.text.strip('"')
             # Remove a forward slash before pound
             embedded = re.sub(r"\\#", r"#", embedded)
@@ -42,14 +40,12 @@ class Workbook(TableauDataItem):
             out_params_map[ds_name] = []
 
             for parm in ele.findall(Datasource.PARAMS_PATH):
-                p = Parameter(parm.get("name"), parm.get("caption"), parm.get("datatype"))
+                p = Parameter(parm.get("name"),
+                              parm.get("caption"),
+                              parm.get("datatype"))
 
                 out_params_map[ds_name].append(p)
 
-        # for ds_name in out_params_map.keys():
-        #     print(f"DATASOURCE: {ds_name}")
-        #     for param in out_params_map[ds_name]:
-        #         print(f"\tParam: {param.name} - {param.caption}")
         return out_params_map
 
     def get_mismatched_parameters(self) -> List[Tuple[str, Parameter, Parameter]]:
@@ -66,7 +62,8 @@ class Workbook(TableauDataItem):
         for workbook_param in workbook_params:
             for ds in datasource_params.keys():
                 for datasource_param in datasource_params[ds]:
-                    if workbook_param.caption.lower() == datasource_param.caption.lower() \
+                    if workbook_param.caption.lower() == \
+                            datasource_param.caption.lower() \
                             and workbook_param.name != datasource_param.name:
                         mismatched.append((ds, workbook_param, datasource_param))
         return mismatched

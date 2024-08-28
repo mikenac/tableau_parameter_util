@@ -7,6 +7,7 @@ from tableau_parameter_util.parameter import Parameter
 
 
 class TableauDataItem:
+    """ Root class for Tableau datasources and workbooks """
 
     logging.basicConfig(filename="fix.log", level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -19,6 +20,7 @@ class TableauDataItem:
         self.parameters_by_caption: Mapping[str, List[Parameter]] = {}
         self.parameters_by_name: Mapping[str, List[Parameter]] = {}
         self.parameters = self.get_parameters()
+        self.is_dirty = False
 
         for param in self.parameters:
             if param.caption not in self.parameters_by_caption.keys():
@@ -43,6 +45,29 @@ class TableauDataItem:
         self.parameters = out_params
         return out_params
 
+    def rename_parameter(self, param_name: str, new_name: str, new_caption: str = None):
+        """ Rename a parameter. Need to write to persist."""
+
+        root = self.tree.getroot()
+
+        for parm in root.findall(self.params_path):
+            if parm.get("name") == param_name:
+                self.is_dirty = True
+                parm.set("name", new_name)
+                # also rename the caption
+                if new_caption:
+                    parm.set("caption", new_caption)
+
+    def delete_parameter(self, param_name: str):
+        """ Delete a parameter. Need to write to persist."""
+        root = self.tree.getroot()
+
+        for parm in root.findall(self.params_path):
+            if parm.get("name") == param_name:
+                parent = parm.getparent()
+                parent.remove(parm)
+                self.is_dirty = True
+
     def get_duplicate_params(self, params: List[Parameter]) -> Mapping[str, List[str]]:
         """ Create a map of duplicate parameters with an array of Parameter.names as
             the values. Also ignore case, since mismatched Caption case also seems to
@@ -61,3 +86,21 @@ class TableauDataItem:
                 out_dupes[dupe.caption.lower()] = [dupe.name]
         return out_dupes
 
+    def replace_all_in_file(self, search: str, replace: str, output_file: str):
+        """ Globally replace a string in a file """
+
+        with open(self.path, 'r') as orig:
+            data = orig.read()
+            data = data.replace(search, replace)
+        with open(output_file, 'w') as output_file:
+            output_file.write(data)
+
+    def write(self, output_path: str = None):
+        """ Write the XML to disk """
+
+        if output_path:
+            self.tree.write(output_path)
+            self.is_dirty = False
+        else:
+            self.tree.write(self.path)
+            self.is_dirty = False
